@@ -16,4 +16,7 @@ public class ImageLink {
     private int id;
     @Column(name = "owner_id")
     private int ownerId;
+    public String getSource() {
+        return "/images/" + id;
+    }
 }

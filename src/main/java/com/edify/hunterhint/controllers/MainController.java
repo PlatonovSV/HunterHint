@@ -7,10 +7,7 @@ import com.google.common.hash.Hashing;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -19,9 +16,9 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-
-import static java.time.temporal.ChronoUnit.DAYS;
+import java.util.Optional;
 
 @Controller
 @RequiredArgsConstructor
@@ -45,69 +42,14 @@ public class MainController {
 
     private User session = null;
     private final String[] methodArr = new String[]{"Все способы", "Вольерная охота", "Натаска и нагонка собак",
-            "Организация загонной охоты", "Организация охоты на реву", "Организация охоты с гончими собаками",
-            "Организация охоты с засидки", "Организация охоты с лайками", "Организация охоты с легавыми собаками",
-            "Организация охоты с луком/арболетом", "Организация охоты с подхода", "Самостоятельная охота"};
+            "Загонная охоты", "Охота на реву", "Охота с гончими собаками",
+            "Охота с засидки", "Охота с лайками", "Охота с легавыми собаками",
+            "Охота с луком/арболетом", "Охота с подхода", "Самостоятельная охота"};
 
-    private final String[] guidingArr = new String[]{"Не выбрано", "Охота с егерем", "Охота без сопровождения", "Частичное сопровождение"};
+    private final String[] guidingArr = new String[]{"Не выбрано", "Охота с егерем", "Без сопровождения", "Частичное сопровождение"};
 
     @GetMapping("/")
-    public String mainPage(@RequestParam(name = "region", required = false) String region,
-                           @RequestParam(name = "district", required = false) String district,
-                           @RequestParam(name = "huntingResource", required = false) String huntingResource,
-                           @RequestParam(name = "hotel", required = false) boolean hotel,
-                           @RequestParam(name = "bath", required = false) boolean bath,
-                           @RequestParam(name = "noDate", required = false) boolean noDate,
-                           @RequestParam(name = "checkInDate", required = false) String checkInDate,
-                           @RequestParam(name = "leaveDate", required = false) String leaveDate,
-                           @RequestParam(name = "guests", required = false) Long guests,
-                           @RequestParam(name = "hunters", required = false) Long hunters,
-                           @RequestParam(name = "price", required = false) Long price,
-                           @RequestParam(name = "guiding", required = false) String guiding,
-                           @RequestParam(name = "method", required = false) String method, Model model) {
-
-        if (guests == null || guests < 0L) {
-            guests = 0L;
-        }
-        if (hunters == null || hunters < 0L) {
-            hunters = 1L;
-        }
-        short quantity = (short) (guests + hunters);
-        LocalDate checkIn;
-        if (checkInDate == null || checkInDate.isEmpty()) {
-            checkIn = LocalDate.MIN;
-        } else {
-            checkIn = LocalDate.parse(checkInDate);
-        }
-        LocalDate leave;
-        if (leaveDate == null || leaveDate.isEmpty()) {
-            leave = LocalDate.MIN;
-        } else {
-            leave = LocalDate.parse(leaveDate);
-        }
-        if (noDate) {
-            checkIn = LocalDate.MIN;
-            leave = LocalDate.MIN;
-        }
-        if (price == null || price < 0) {
-            price = (long) Integer.MAX_VALUE;
-        }
-        if (method == null || method.isEmpty()) {
-            method = "0";
-        }
-        if (guiding == null || guiding.isEmpty()) {
-            guiding = "0";
-        }
-
-        List<HuntingFarm> huntingFarms = huntingFarmService.findByRegionAndMd(region, district);
-        huntingFarms = huntingFarmService.bathAndHotelSearch(hotel, quantity, bath, huntingFarms);
-        huntingFarms = huntingFarmService.findByDateAndCostAndOther(huntingFarms, checkIn, leave, quantity, hotel,
-                huntingResource, price.intValue(), Integer.parseInt(guiding), Integer.parseInt(method));
-        for (HuntingFarm farm : huntingFarms) {
-            farm.setRegionName(regionRep.findById((long) farm.getRegionCode()).get().getName());
-            farm.setMunicipalDistrictName(districtRep.findById((long) farm.getMunicipalDistrictId()).get().getName());
-        }
-        model.addAttribute("farms", huntingFarms);
+    public String index(Model model) {
         boolean isOwnerOrAdmin;
         boolean sessionNotNull;
         if (session != null) {
@@ -119,14 +61,71 @@ public class MainController {
         }
         model.addAttribute("isOwnerOrAdmin", isOwnerOrAdmin);
         model.addAttribute("sessionNotNull", sessionNotNull);
+        return "index";
+    }
 
-        return "mainPage";
+    @GetMapping("/area/{id}")
+    public String placeInfo(@PathVariable int id, Model model) {
+        Optional<HuntingFarm> farm = huntingFarmRep.findById(Long.valueOf(id));
+        if (farm.isPresent()) {
+            HuntingFarm huntingFarm = farm.get();
+            huntingFarm.setRegionName(regionRep.findById((long) huntingFarm.getRegionCode()).get().getName());
+            huntingFarm.setMunicipalDistrictName(districtRep.findById((long) huntingFarm.getMunicipalDistrictId()).get().getName());
+            huntingFarm.setCompanyStr(companyNameRep.findById((long) huntingFarm.getCompanyId()).get().getName());
+            List<ImageLink> imageLinks = imageLinkRep.findAllByOwnerId(huntingFarm.getId());
+
+            List<Booking> bookings = bookingRep.findByFarmId(huntingFarm.getId());
+            List<Comment> comments = new LinkedList<>();
+            for (Booking booking : bookings) {
+                String review = booking.getReview();
+                if (review != null && !review.isEmpty()) {
+                    Comment comment = new Comment();
+                    comment.setComment(review);
+                    Optional<User> user = userRep.findById(Long.valueOf(booking.getUserId()));
+                    if (user.isPresent()) {
+                        String name = String.valueOf(userNameRep.findById((long) user.get().getNameId()).get().getName());
+                        String lastName = user.get().getLastLame();
+                        comment.setUserName(name);
+                        comment.setLastName(lastName);
+                        comment.setDate(booking.getLeave().toString());
+                        comment.setLinks(imageLinkRep.findAllByOwnerId(booking.getId()));
+                        comments.add(comment);
+                    }
+                }
+            }
+            boolean thisOwnerOrAdmin = false;
+            boolean sessionNotNull = false;
+            if (session != null) {
+                sessionNotNull = true;
+                if (session.isAdmin()) {
+                    thisOwnerOrAdmin = true;
+                }
+                if (session.isOwner() && session.getId() == huntingFarm.getUserId()) {
+                    thisOwnerOrAdmin = true;
+                }
+            }
+            model.addAttribute("thisOwnerOrAdmin", thisOwnerOrAdmin);
+            model.addAttribute("sessionNotNull", sessionNotNull);
+
+            User user = userRep.findById(Long.valueOf(huntingFarm.getUserId())).get();
+            String userName = userNameRep.findById((long) user.getNameId()).get().getName();
+            user.setNameSrt(userName);
+            model.addAttribute("user", user);
+
+            model.addAttribute("farm", huntingFarm);
+            model.addAttribute("images", imageLinks);
+            model.addAttribute("comments", comments);
+            return "detailed";
+        } else {
+            return "redirect:/";
+        }
+
     }
 
     @GetMapping("/user/{id}/delete")
     public String deleteUser(@PathVariable Long id,
-                              @RequestParam(name = "checkbox", required = false) boolean checkbox,
-                              Model model) {
+                             @RequestParam(name = "checkbox", required = false) boolean checkbox,
+                             Model model) {
         if (session == null) {
             return "redirect:/login";
         }
@@ -145,7 +144,7 @@ public class MainController {
             }
             return "redirect:/";
         }
-        model.addAttribute("id", ""+id);
+        model.addAttribute("id", "" + id);
         return "deleteUser";
     }
 
@@ -158,8 +157,8 @@ public class MainController {
             return "redirect:/";
         }
         List<User> users = userRep.findAll();
-        for (User user:
-             users) {
+        for (User user :
+                users) {
             user.setNameSrt(userNameRep.findById((long) user.getNameId()).get().getName());
             if (user.isAdmin()) {
                 user.setAccessLevelStr("администратор");
@@ -227,7 +226,7 @@ public class MainController {
     }
 
     @GetMapping("/bookings")
-    public String bookingList(Model model){
+    public String bookingList(Model model) {
         if (session == null) {
             return "redirect:/login";
         }
@@ -237,8 +236,8 @@ public class MainController {
         } else {
             if (session.isOwner()) {
                 List<HuntingFarm> huntingFarms = huntingFarmRep.findByUserId(session.getId());
-                for (HuntingFarm farm:
-                     huntingFarms) {
+                for (HuntingFarm farm :
+                        huntingFarms) {
                     bookings.addAll(bookingRep.findByFarmId(farm.getId()));
                 }
             } else {
@@ -246,7 +245,7 @@ public class MainController {
             }
         }
 
-        for (Booking booking:
+        for (Booking booking :
                 bookings) {
             User user = userRep.findById((long) booking.getUserId()).orElse(null);
             String name;
@@ -269,7 +268,7 @@ public class MainController {
     }
 
     @GetMapping("/areas")
-    public String farmList(Model model){
+    public String farmList(Model model) {
         if (session == null) {
             return "redirect:/login";
         }
@@ -284,8 +283,8 @@ public class MainController {
             farms = huntingFarmRep.findAll();
         }
 
-        for (HuntingFarm farm:
-             farms) {
+        for (HuntingFarm farm :
+                farms) {
             farm.setCompanyStr(companyNameRep.findById((long) farm.getCompanyId()).get().getName());
             farm.setRegionName(regionRep.findById((long) farm.getRegionCode()).get().getName());
             farm.setMunicipalDistrictName(districtRep.findById((long) farm.getMunicipalDistrictId()).get().getName());
@@ -299,6 +298,7 @@ public class MainController {
         session = null;
         return "redirect:/";
     }
+
     @GetMapping("/login")
     public String login(@RequestParam(name = "email", required = false) String email,
                         @RequestParam(name = "password", required = false) String password, Model model) {
@@ -349,7 +349,7 @@ public class MainController {
                     .hashString(originalString, StandardCharsets.UTF_8)
                     .toString();
 
-            User user = new User(-1, userName.getId(), lastName, patronymic, email, phone, sha256hex, -1, null,null);
+            User user = new User(-1, userName.getId(), lastName, patronymic, email, phone, sha256hex, -1, null, null);
             user = userRep.save(user);
             session = user;
             return "redirect:/";
@@ -395,7 +395,7 @@ public class MainController {
                     }
 
                     HuntingFarm farm = new HuntingFarm(-1, session.getId(), companyName.getId(), (short) -1, -1, name, coordinates, areaFloat, hotel, bath,
-                            maxNumberHunters.shortValue(), hotelCapacity.shortValue(), hotelPrice.intValue(), description, region, district, -1, null);
+                            maxNumberHunters.shortValue(), hotelCapacity.shortValue(), hotelPrice.intValue(), description, region, district, -1, null, null);
                     farm = huntingFarmService.upload(farm);
                     return "redirect:/area/" + farm.getId();
                 }
@@ -447,160 +447,6 @@ public class MainController {
         return "addOffer";
 
     }
-
-    @GetMapping("/area/{id}")
-    public String placeInfo(@PathVariable int id,
-                            @RequestParam(name = "huntingResource", required = false) String huntingResource,
-                            @RequestParam(name = "checkInDate", required = false) String checkInDate,
-                            @RequestParam(name = "leaveDate", required = false) String leaveDate,
-                            @RequestParam(name = "guests", required = false) Long guests,
-                            @RequestParam(name = "hunters", required = false) Long hunters,
-                            @RequestParam(name = "guiding", required = false) String guiding,
-                            @RequestParam(name = "noDate", required = false) boolean noDate,
-                            @RequestParam(name = "method", required = false) String method, Model model) {
-
-        if (guests == null || guests < 0L) {
-            guests = 0L;
-        }
-        if (hunters == null || hunters < 0L) {
-            hunters = 1L;
-        }
-        short quantity = (short) (guests + hunters);
-        LocalDate checkIn;
-        if (checkInDate == null || checkInDate.isEmpty()) {
-            checkIn = LocalDate.MIN;
-        } else {
-            checkIn = LocalDate.parse(checkInDate);
-        }
-        LocalDate leave;
-        if (leaveDate == null || leaveDate.isEmpty()) {
-            leave = LocalDate.MIN;
-        } else {
-            leave = LocalDate.parse(leaveDate);
-        }
-        if (noDate) {
-            checkIn = LocalDate.MIN;
-            leave = LocalDate.MIN;
-        }
-        if (method == null || method.isEmpty()) {
-            method = "0";
-        }
-        if (guiding == null || guiding.isEmpty()) {
-            guiding = "0";
-        }
-        int guidingInt = Integer.parseInt(guiding);
-        int methodInt = Integer.parseInt(method);
-
-
-        if (checkIn.isAfter(leave)) {
-            leave = LocalDate.MIN;
-            checkIn = LocalDate.MIN;
-        }
-
-        HuntingFarm farm = huntingFarmRep.findById((long) id).get();
-        farm.setRegionName(regionRep.findById((long) farm.getRegionCode()).get().getName());
-        farm.setMunicipalDistrictName(districtRep.findById((long) farm.getMunicipalDistrictId()).get().getName());
-        farm.setCompanyStr(companyNameRep.findById((long) farm.getCompanyId()).get().getName());
-
-        int hotelPrice = 0;
-        if (farm.isHotel()) {
-            hotelPrice += quantity * farm.getAccommodationCost() * DAYS.between(checkIn, leave);
-        }
-
-        List<HuntingOffer> offers = offerRep.findByFarmId(id);
-
-        List<HuntingOffer> findOffers = new ArrayList<>();
-
-        for (HuntingOffer offer : offers) {
-            boolean free = false;
-            if (checkIn.isEqual(LocalDate.MIN) || leave.isEqual(LocalDate.MIN) || !checkIn.isAfter(offer.getOpeningDate()) && !leave.isBefore(offer.getClosingDate())) {
-                int resource = resourcesRep.getOneByName(huntingResource);
-                if (resource == -1 || resource == offer.getResourcesTypeId()) {
-                    if (guidingInt == 0 || offer.getGuidingPreferenceId() == guidingInt || offer.getGuidingPreferenceId() == 0) {
-                        if (methodInt == 0 || offer.getMethodId() == methodInt || offer.getMethodId() == 0) {
-                            List<Booking> bookings = bookingRep.findByOfferId(offer.getId());
-                            free = true;
-                            if (!bookings.isEmpty()) {
-                                for (Booking booking :
-                                        bookings) {
-                                    if (checkIn != LocalDate.MIN || leave != LocalDate.MIN) {
-                                        if (!(booking.getLeave().isBefore(checkIn) || booking.getCheckIn().isAfter(leave))) {
-                                            free = false;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                }
-            }
-            if (free) {
-                List<ResourcesCost> resourcesCosts = resourcesCostRep.findByOfferId(offer.getId());
-                int minResourcesCost = Integer.MAX_VALUE;
-                for (int j = 0; j < resourcesCosts.size(); j++) {
-                    if (minResourcesCost > resourcesCosts.get(0).getCost()) {
-                        minResourcesCost = resourcesCosts.get(0).getCost();
-                        break;
-                    }
-                }
-                if (minResourcesCost == Integer.MAX_VALUE) {
-                    minResourcesCost = 0;
-                }
-
-                offer.setGuidingPreferenceName(guidingArr[offer.getGuidingPreferenceId()]);
-                offer.setMethodName(methodArr[offer.getMethodId()]);
-                offer.setResourcesTypeName(resourcesRep.findById((long) offer.getResourcesTypeId()).get().getName());
-                offer.setMinCost(minResourcesCost + offer.getEventCost());
-                findOffers.add(offer);
-            }
-        }
-        List<Booking> bookings = bookingRep.findByFarmId(farm.getId());
-        List<Booking> comments = new ArrayList<>();
-        for (Booking booking :
-                bookings) {
-            if (booking.getReview() != null && !booking.getReview().isEmpty()) {
-                comments.add(booking);
-            }
-        }
-        for (Booking comment :
-                comments) {
-            comment.setImageLinks(imageLinkRep.findAllByOwnerId(comment.getId()));
-            User user = userRep.findById((long) comment.getUserId()).get();
-            String userName = userNameRep.findById((long) user.getNameId()).get().getName();
-            comment.setUserName(user.getLastLame()+ " " + userName);
-        }
-        User user = userRep.findById(Long.valueOf(farm.getUserId())).get();
-        String userName = userNameRep.findById((long) user.getNameId()).get().getName();
-        user.setNameSrt(userName);
-
-        model.addAttribute("farm", farm);
-        model.addAttribute("user", user);
-        model.addAttribute("images", imageLinkRep.findAllByOwnerId(farm.getId()));
-        model.addAttribute("offers", findOffers);
-        model.addAttribute("hotelPrice", hotelPrice);
-        model.addAttribute("checkInAtr", checkIn.toString());
-        model.addAttribute("leaveAtr", leave.toString());
-        model.addAttribute("comments", comments);
-        boolean thisOwnerOrAdmin = false;
-        boolean sessionNotNull;
-        if (session != null) {
-            sessionNotNull = true;
-            if (session.isAdmin()){
-                thisOwnerOrAdmin = true;
-            }
-            if (session.isOwner() && session.getId() == farm.getUserId()) {
-                thisOwnerOrAdmin = true;
-            }
-        } else {
-            sessionNotNull = false;
-        }
-        model.addAttribute("thisOwnerOrAdmin", thisOwnerOrAdmin);
-        model.addAttribute("sessionNotNull", sessionNotNull);
-        return "farmInfo";
-    }
-
 
     @GetMapping("/area/{id}/delete")
     public String deletePlace(@PathVariable Long id,
@@ -734,7 +580,7 @@ public class MainController {
             boolean sessionNotNull = false;
             if (session != null) {
                 sessionNotNull = true;
-                if (session.isAdmin()){
+                if (session.isAdmin()) {
                     thisOwnerOrAdmin = true;
                 }
                 if (session.isOwner() && session.getId() == farm.getUserId()) {

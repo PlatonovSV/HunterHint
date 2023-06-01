@@ -52,6 +52,8 @@ public class HuntingFarm {
     private int minCost;
     @Transient
     private String companyStr;
+    @Transient
+    private String preview;
 
     public String getFirstCord() {
         return baseCoordinate[0] + "";

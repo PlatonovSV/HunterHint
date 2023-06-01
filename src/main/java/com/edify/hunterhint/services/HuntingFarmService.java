@@ -146,25 +146,12 @@ public class HuntingFarmService {
                         if ((offer.getResourcesTypeId() == resourceId || resourceId == 0) && resourceId != -1) {
                             if (guiding == 0 || offer.getGuidingPreferenceId() == guiding) {
                                 if (method == 0 || offer.getMethodId() == method) {
-                                    if (checkIn.isEqual(LocalDate.MIN) || leave.isEqual(LocalDate.MIN) || !checkIn.isAfter(offer.getOpeningDate()) && !leave.isBefore(offer.getClosingDate())) {
+                                    if (checkIn.isEqual(LocalDate.MIN) || leave.isEqual(LocalDate.MIN) || ((offer.getClosingDate().isAfter(leave) || offer.getClosingDate().isEqual(leave)) && (offer.getOpeningDate().isBefore(checkIn) || offer.getOpeningDate().isEqual(checkIn)))) {
                                         isMatch = true;
                                     }
                                 }
                             }
                             if (isMatch) {
-                                List<Booking> bookings = bookingRep.findByOfferId(offer.getId());
-                                if (!bookings.isEmpty()) {
-                                    for (Booking booking :
-                                            bookings) {
-                                        if (checkIn != LocalDate.MIN || leave != LocalDate.MIN) {
-                                            if (!(booking.getLeave().isBefore(checkIn) || booking.getCheckIn().isAfter(leave))) {
-                                                free = false;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-
                                 if (free) {
                                     int cost = peopleMultiDays * farm.getAccommodationCost();
                                     cost += offer.getEventCost();
