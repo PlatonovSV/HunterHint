@@ -1,23 +1,16 @@
 <!doctype html>
-<html class="no-js" lang="">
+<html lang="ru">
 
 <head>
     <meta charset="utf-8">
     <title></title>
-    <meta name="description" content="">
+    <meta name="description" content="Book hunt">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <meta property="og:title" content="">
-    <meta property="og:type" content="">
-    <meta property="og:url" content="">
-    <meta property="og:image" content="">
+    <link rel="apple-touch-icon" href="/img/img_1.png">
 
-    <link rel="manifest" href="site.webmanifest">
-    <link rel="apple-touch-icon" href="icon.png">
-    <!-- Place favicon.ico in the root directory -->
-
-    <link rel="stylesheet" href="css/normalize.css">
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="/css/normalize.css">
+    <link rel="stylesheet" href="/css/main.css">
 
     <meta name="theme-color" content="#fafafa">
 </head>
@@ -32,21 +25,29 @@
                 <#if !sessionNotNull>
                     <a class="menuItem" href="/login">Войти</a>
                 <#else >
-                    <a class="menuItem" href="/login">Меню</a>
+                    <a class="menuItem" href="/logout">Выйти</a>
                 </#if>
 
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
+                <#if sessionNotNull>
+                    <a class="menuItem" href="/personal">Кабинет</a>
+                </#if>
+                <#if sessionNotNull>
+                    <a class="menuItem" href="/bookings">Бронирования</a>
+                </#if>
             </div>
             <div class="menuSub">
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
+                <#if isAdmin>
+                    <a class="menuItem" href="/users">Пользователи</a>
+                </#if>
+                <#if isOwnerOrAdmin>
+                    <a class="menuItem" href="/areas">Хозяйства</a>
+                </#if>
                 <#if isOwnerOrAdmin>
                     <a class="menuItem" href="/area/add">Создать</a>
                 </#if>
             </div>
         </div>
-        =
+
     </div>
     <div class="body">
         <div class="advertisement">
@@ -153,10 +154,10 @@
                                         </p><br>
                                         <label for="capacity">Колличество гостей</label>
                                         <input type="number" id="capacity1" name="guests"
-                                               min="0" max="200" value="0"><br>
+                                               min="0" max="200" value="0"><br><br>
                                         <label for="capacity1">Колличество охотников</label>
                                         <input type="number" id="capacity2" name="hunters"
-                                               min="1" max="200" value="1"><br>
+                                               min="1" max="200" value="1"><br><br>
 
                                         <label for="price">Стоимость охоты</label>
                                         <input type="number" id="price" name="price"
@@ -201,8 +202,6 @@
     </div>
 </div>
 
-<script src="javaScript/vendor/modernizr-3.11.2.min.js"></script>
-<script src="javaScript/plugins.js"></script>
 <script src="javaScript/seachFilters.js"></script>
 <script src="javaScript/sendFilters.js"></script>
 <script src="javaScript/seachResourses.js"></script>

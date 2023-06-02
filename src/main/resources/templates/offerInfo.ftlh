@@ -1,19 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="">
+<html lang="ru">
 
 <head>
     <meta charset="utf-8">
-    <title>${farm.name}</title>
-    <meta name="description" content="">
+    <title></title>
+    <meta name="description" content="Book hunt">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <meta property="og:title" content="">
-    <meta property="og:type" content="">
-    <meta property="og:url" content="">
-    <meta property="og:image" content="">
-
-    <link rel="manifest" href="site.webmanifest">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" href="/img/img_1.png">
 
     <link rel="stylesheet" href="/css/normalize.css">
     <link rel="stylesheet" href="/css/main.css">
@@ -27,14 +21,29 @@
         <a href="/"><p class="logo"></p></a>
         <div class="menu">
             <div class="menuSub">
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
+                <#if !sessionNotNull>
+                    <a class="menuItem" href="/login">Войти</a>
+                <#else >
+                    <a class="menuItem" href="/logout">Выйти</a>
+                </#if>
+
+                <#if sessionNotNull>
+                    <a class="menuItem" href="/personal">Кабинет</a>
+                </#if>
+                <#if sessionNotNull>
+                    <a class="menuItem" href="/bookings">Бронирования</a>
+                </#if>
             </div>
             <div class="menuSub">
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
+                <#if isAdmin>
+                    <a class="menuItem" href="/users">Пользователи</a>
+                </#if>
+                <#if isOwnerOrAdmin>
+                    <a class="menuItem" href="/areas">Хозяйства</a>
+                </#if>
+                <#if isOwnerOrAdmin>
+                    <a class="menuItem" href="/area/add">Создать</a>
+                </#if>
             </div>
         </div>
     </div>
@@ -162,7 +171,7 @@
                     <button type="submit">Вернуться на главную</button>
                 </form>
                 <br><br>
-                <#if thisOwnerOrAdmin>
+                <#if isOwnerOrAdmin>
                     <hr>
                     <form action="/area/${farm.id}/${offer.id}/addCost">
                         <input type="submit" value="Добавить информацию о стоимости трофея"/>

@@ -1,19 +1,13 @@
 <!doctype html>
-<html class="no-js" lang="">
+<html lang="ru">
 
 <head>
     <meta charset="utf-8">
-    <title>${farm.name}</title>
-    <meta name="description" content="">
+    <title></title>
+    <meta name="description" content="Book hunt">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <meta property="og:title" content="">
-    <meta property="og:type" content="">
-    <meta property="og:url" content="">
-    <meta property="og:image" content="">
-
-    <link rel="manifest" href="site.webmanifest">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" href="/img/img_1.png">
 
     <link rel="stylesheet" href="/css/normalize.css">
     <link rel="stylesheet" href="/css/main.css">
@@ -27,14 +21,29 @@
         <a href="/"><p class="logo"></p></a>
         <div class="menu">
             <div class="menuSub">
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
+                <#if !sessionNotNull>
+                    <a class="menuItem" href="/login">Войти</a>
+                <#else >
+                    <a class="menuItem" href="/logout">Выйти</a>
+                </#if>
+
+                <#if sessionNotNull>
+                    <a class="menuItem" href="/personal">Кабинет</a>
+                </#if>
+                <#if sessionNotNull>
+                    <a class="menuItem" href="/bookings">Бронирования</a>
+                </#if>
             </div>
             <div class="menuSub">
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
-                <a class="menuItem" href="https://www.apple.com/">Item</a>
+                <#if isAdmin>
+                    <a class="menuItem" href="/users">Пользователи</a>
+                </#if>
+                <#if isOwnerOrAdmin>
+                    <a class="menuItem" href="/areas">Хозяйства</a>
+                </#if>
+                <#if isOwnerOrAdmin>
+                    <a class="menuItem" href="/area/add">Создать</a>
+                </#if>
             </div>
         </div>
     </div>
@@ -129,10 +138,9 @@
                         <div>
                             <div id="loader" class="hidden">Отправляем...</div>
                             <br>
-                            <label>
-                                <input class="input_form" type="text" name="huntingResource"
-                                       placeholder="Вид охотничьих ресурсов">
-                            </label><br>
+                            <input id="resourceInput" class="input_form" type="text" name="huntingResource"
+                                   placeholder="Вид охотничьих ресурсов">
+                            <div id="resultsContainer"></div>
                             <br><label>
                                 <label for="start">Дата начала охоты</label>
                                 <input class="input_form" type="date" id="start" name="checkInDate"
@@ -191,7 +199,7 @@
                 </div>
             </div>
             <br><br>
-            <#if thisOwnerOrAdmin>
+            <#if isOwnerOrAdmin>
                 <hr>
                 <form action="/area/${farm.id}/add">
                     <input type="submit" value="Добавить предложение об охоте"/>
@@ -243,11 +251,9 @@
     </div>
 </div>
 
-<script src="/javaScript/vendor/modernizr-3.11.2.min.js"></script>
-<script src="/javaScript/plugins.js"></script>
-<script src="/javaScript/main.js"></script>
 <script src="/javaScript/slides.js"></script>
 <script src="/javaScript/sendOfferFilters.js"></script>
+<script src="/javaScript/seachResourses.js"></script>
 </body>
 
 </html>

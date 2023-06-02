@@ -50,17 +50,7 @@ public class MainController {
 
     @GetMapping("/")
     public String index(Model model) {
-        boolean isOwnerOrAdmin;
-        boolean sessionNotNull;
-        if (session != null) {
-            sessionNotNull = true;
-            isOwnerOrAdmin = session.isOwnerOrAdmin();
-        } else {
-            sessionNotNull = false;
-            isOwnerOrAdmin = false;
-        }
-        model.addAttribute("isOwnerOrAdmin", isOwnerOrAdmin);
-        model.addAttribute("sessionNotNull", sessionNotNull);
+        addSessionInfo(model);
         return "index";
     }
 
@@ -93,19 +83,6 @@ public class MainController {
                     }
                 }
             }
-            boolean thisOwnerOrAdmin = false;
-            boolean sessionNotNull = false;
-            if (session != null) {
-                sessionNotNull = true;
-                if (session.isAdmin()) {
-                    thisOwnerOrAdmin = true;
-                }
-                if (session.isOwner() && session.getId() == huntingFarm.getUserId()) {
-                    thisOwnerOrAdmin = true;
-                }
-            }
-            model.addAttribute("thisOwnerOrAdmin", thisOwnerOrAdmin);
-            model.addAttribute("sessionNotNull", sessionNotNull);
 
             User user = userRep.findById(Long.valueOf(huntingFarm.getUserId())).get();
             String userName = userNameRep.findById((long) user.getNameId()).get().getName();
@@ -115,6 +92,8 @@ public class MainController {
             model.addAttribute("farm", huntingFarm);
             model.addAttribute("images", imageLinks);
             model.addAttribute("comments", comments);
+
+            addSessionInfo(model);
             return "detailed";
         } else {
             return "redirect:/";
@@ -371,7 +350,7 @@ public class MainController {
                           @RequestParam(name = "coordinatesOfCampLongitude", required = false) String coordinatesOfCampLongitude,
                           @RequestParam(name = "area", required = false) String area,
                           @RequestParam(name = "maxNumberHunters", required = false) Long maxNumberHunters,
-                          @RequestParam(name = "description", required = false) String description) {
+                          @RequestParam(name = "description", required = false) String description, Model model) {
         if (session != null && (session.isAdmin() || session.isOwner())) {
             if (region != null && !region.isEmpty() && district != null && !district.isEmpty() && name != null && !name.isEmpty() &&
                     hotelPrice != null && hotelCapacity != null && coordinatesOfCampLatitude != null &&
@@ -400,6 +379,7 @@ public class MainController {
                     return "redirect:/area/" + farm.getId();
                 }
             }
+            addSessionInfo(model);
             return "addFarm";
         }
         return "redirect:/login";
@@ -444,6 +424,7 @@ public class MainController {
         }
 
         model.addAttribute("id", id);
+        addSessionInfo(model);
         return "addOffer";
 
     }
@@ -576,20 +557,7 @@ public class MainController {
             model.addAttribute("resources", resourcesCostRep.findByOfferId(offerId.intValue()));
             model.addAttribute("dates", dates);
 
-            boolean thisOwnerOrAdmin = false;
-            boolean sessionNotNull = false;
-            if (session != null) {
-                sessionNotNull = true;
-                if (session.isAdmin()) {
-                    thisOwnerOrAdmin = true;
-                }
-                if (session.isOwner() && session.getId() == farm.getUserId()) {
-                    thisOwnerOrAdmin = true;
-                }
-            }
-            model.addAttribute("thisOwnerOrAdmin", thisOwnerOrAdmin);
-            model.addAttribute("sessionNotNull", sessionNotNull);
-
+            addSessionInfo(model);
             return "offerInfo";
         }
         return "redirect:/";
@@ -647,6 +615,7 @@ public class MainController {
         }
         model.addAttribute("farmId", farmId.intValue());
         model.addAttribute("offerId", offerId.intValue());
+        addSessionInfo(model);
         return "addCost";
     }
 
@@ -705,6 +674,7 @@ public class MainController {
         model.addAttribute("review", review);
         model.addAttribute("info", info);
         model.addAttribute("id", id.toString());
+        addSessionInfo(model);
 
         return "bookingInfo";
 
@@ -741,6 +711,7 @@ public class MainController {
             return "redirect:/login";
         }
         model.addAttribute("id", id);
+        addSessionInfo(model);
         return "addImage";
     }
 
@@ -764,6 +735,20 @@ public class MainController {
             }
         }
 
+    }
+
+    private void addSessionInfo(Model model) {
+        boolean isOwnerOrAdmin = false;
+        boolean sessionNotNull = false;
+        boolean isAdmin = false;
+        if (session != null) {
+            sessionNotNull = true;
+            isOwnerOrAdmin = session.isOwnerOrAdmin();
+            isAdmin = session.isAdmin();
+        }
+        model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("isOwnerOrAdmin", isOwnerOrAdmin);
+        model.addAttribute("sessionNotNull", sessionNotNull);
     }
 }
 
